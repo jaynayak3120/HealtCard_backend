@@ -1,16 +1,20 @@
-const env = require('dotenv')
+const env = require('dotenv'),
+    bodyParser = require('body-parser')
 env.config()
 
 //----------Routes
-const UserRoutes = require('./src/routes/user')
-const DoctorRoutes = require('./src/routes/doctor')
-const LabRoutes = require('./src/routes/laboratory')
-const PharmaRoute = require('./src/routes/pharma')
-const CasesRoute = require('./src/routes/cases')
+const UserRoutes = require('./src/routes/user'),
+      DoctorRoutes = require('./src/routes/doctor'),
+      LabRoutes = require('./src/routes/laboratory'),
+      PharmaRoute = require('./src/routes/pharma'),
+      CasesRoute = require('./src/routes/cases')
 
-const express = require('express')
-const server = express()
+const express = require('express'),
+    
+server = express()
 server.use(express.json())
+server.use(bodyParser.json())
+server.use(bodyParser.urlencoded({ extended: false}))
 
 server.get('', (req,res) => {
     res.send('Hello from express!')
