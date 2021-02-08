@@ -1,5 +1,6 @@
 const express = require('express'),
       client = require('../Controllers/db'),
+      { getHashedPass, comparePass } = require('../Controllers/bcrypt')
       labRoute = express.Router()
 
 labRoute.get('/', (req,res) => {client
@@ -18,28 +19,41 @@ labRoute.get('/id', (req,res) => {
 })
 
 labRoute.post('/signin', (req,res) => {
-    console.log(req.body)
     client
-    .query(`select * from laboratory where "labID"=${req.body.labID}`)
-    .then(resp => {
-        console.log(resp.rows)
-        res.status(200).send(resp.rows[0])
-    })
-    .catch(e => console.error(e.stack))
-    res.status(200).send('Lab Login')
+        .query(`select * from laboratory where "labID"=${req.body.labID}`)
+        .then(resp => {
+            comparePass(req.body.labPass,resp.rows[0].labPass).then(result => {
+                if(result) {
+                    delete resp.rows[0].labPass
+                    res.status(200).send(resp.rows[0])
+                } else {
+                    res.status(403).send('Wrong password')
+                }
+            }).catch(e => {
+                res.status(403).send('Something went wrong! Please try again')
+            })
+        })
+        .catch(e => console.error(e.stack))
 })
 
 labRoute.post('/signup', (req,res) => {
-    console.log(req.body)
+
     const text = 'INSERT INTO laboratory VALUES($1, $2, $3) RETURNING *'
     const values = [req.body.labID, req.body.labPass, req.body.labName]
-    client
-        .query(text, values)
-        .then(resp => {
-            console.log(resp.rows)
-            res.status(200).send(resp.rows[0])
-        })
-        .catch(e => console.error(e.stack))
+    
+    getHashedPass(req.body.labPass).then(pass => {
+        values[1] = pass
+        client
+            .query(text, values)
+            .then(resp => {
+                delete resp.rows[0].labPass
+                res.status(200).send(resp.rows[0])
+            })
+            .catch(e => {
+                res.status(403).send('Something went wrong! Please try again')
+                console.error(e.stack)
+            })
+    })
 })
 
 module.exports = labRoute
