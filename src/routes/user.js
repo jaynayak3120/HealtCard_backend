@@ -19,40 +19,41 @@ userRoute.get('/id', (req,res) => {
     res.status(200).send(`${req.body.userId}`)
 })
 
-userRoute.post('/signin', (req,res) => {
-    client
-        .query(`select * from patient where "patientID"=${req.body.patientID}`)
-        .then(resp => {
-            console.log(resp.rows[0]);
-            comparePass(req.body.patientPass,resp.rows[0].patientPass).then(result => {
-                if(result) {
-                    delete resp.rows[0].patientPass
-                    res.status(200).send(resp.rows[0])
-                } else {
-                    res.status(403).send('Wrong password')
-                }
-            }).catch(e => {
-                res.status(403).send('Something went wrong! Please try again')
-            })
-        })
-        .catch(e => console.error(e.stack))
+userRoute.post('/signin', async (req,res) => {
+    try {
+        const resp = await client.query(`select * from patient where "patientID"=${req.body.patientID}`)
+
+        const result = await comparePass(req.body.patientPass,resp.rows[0].patientPass)
+        if(result) {
+            delete resp.rows[0].patientPass
+            res.status(200).json(resp.rows[0])
+        } else {
+            res.status(404).json({ message: 'Wrong password' })
+        }
+    } catch(e) {
+        res.status(500).json({ message:'Something went wrong! Please try again' })
+    }
 })
 
-userRoute.post('/signup', (req,res) => {
-    
-    const text = 'INSERT INTO patient VALUES($1, $2, $3, $4, $5) RETURNING *',
-          values = [req.body.patientID, req.body.patientPass, req.body.patientName, req.body.age, req.body.bloodGrp]
+userRoute.post('/signup', async (req,res) => {
+    try {
+        const text = ['INSERT INTO patient VALUES($1, $2, $3, $4, $5) RETURNING *',`SELECT * FROM patient where "patientID"=${req.body.patientID}`],
+              values = [req.body.patientID, req.body.patientPass, req.body.patientName, req.body.age, req.body.bloodGrp]
+        
+        const user = await client.query(text[1])
 
-    getHashedPass(req.body.patientPass).then(pass => {
-        values[1] = pass
-        client
-            .query(text, values)
-            .then(resp => {
-                delete resp.rows[0].patientPass
-                res.status(200).send(resp.rows[0])
-            })
-            .catch(e => console.error(e.stack))
-    })
+        if(user.rowCount) {
+            res.status(400).json({ message: "User already exist" })
+        } else {
+            values[1] = await getHashedPass(req.body.patientPass)
+            const resp = await client.query(text[0], values)
+            
+            delete resp.rows[0].patientPass
+            res.status(201).json(resp.rows[0])
+        }
+    } catch (e) {
+        res.status(500).json({ message:'Something went wrong! Please try again', errors: e.stack })
+    }
 })
 
 module.exports = userRoute

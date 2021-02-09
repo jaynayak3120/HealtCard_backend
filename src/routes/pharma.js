@@ -18,42 +18,40 @@ pharmaRoute.get('/id', (req,res) => {
     res.status(200).send(`${req.body.userId}`)
 })
 
-pharmaRoute.post('/signin', (req,res) => {
-    client
-        .query(`select * from pharmacists where "pharmaID"=${req.body.pharmaID}`)
-        .then(resp => {
-            comparePass(req.body.pharmaPass,resp.rows[0].pharmaPass).then(result => {
-                if(result) {
-                    delete resp.rows[0].pharmaPass
-                    res.status(200).send(resp.rows[0])
-                } else {
-                    res.status(403).send('Wrong password')
-                }
-            }).catch(e => {
-                res.status(403).send('Something went wrong! Please try again')
-            })
-        })
-        .catch(e => console.error(e.stack))
+pharmaRoute.post('/signin', async (req,res) => {
+    try {
+        const resp = await client.query(`select * from pharmacists where "pharmaID"=${req.body.pharmaID}`)
+
+        const result = await comparePass(req.body.pharmaPass,resp.rows[0].pharmaPass)
+        if(result) {
+            delete resp.rows[0].pharmaPass
+            res.status(200).json(resp.rows[0])
+        } else {
+            res.status(404).json({ message: 'Wrong password' })
+        }
+    } catch(e) {
+        res.status(500).json({ message:'Something went wrong! Please try again', errors: e.stack })
+    }
 })
 
-pharmaRoute.post('/signup', (req,res) => {
-
-    const text = 'INSERT INTO pharmacists VALUES($1, $2, $3) RETURNING *'
-    const values = [req.body.pharmaID, req.body.pharmaPass, req.body.pharmaName]
-
-    getHashedPass(req.body.pharmaPass).then(pass => {
-        values[1] = pass
-        client
-            .query(text, values)
-            .then(resp => {
-                delete resp.rows[0].pharmaPass
-                res.status(200).send(resp.rows[0])
-            })
-            .catch(e => {
-                res.status(403).send('Something went wrong! Please try again')
-                console.error(e.stack)
-            })
-    })
+pharmaRoute.post('/signup', async (req,res) => {
+    try {
+        const text = ['INSERT INTO pharmacists VALUES($1, $2, $3) RETURNING *', `SELECT * FROM pharmacists where "pharmaID"=${req.body.pharmaID}`],
+              values = [req.body.pharmaID, req.body.pharmaPass, req.body.pharmaName]
+        
+        const user = await client.query(text[1])
+        if(user.rowCount) {
+            res.status(400).json({ message: "User already exist" })
+        } else {
+            values[1] = await getHashedPass(req.body.pharmaPass)
+            const resp = await client.query(text[0], values)
+            
+            delete resp.rows[0].pharmaPass
+            res.status(201).json(resp.rows[0])
+        }
+    } catch(e) {
+        res.status(500).json({ message:'Something went wrong! Please try again', errors: e.stack })
+    }
 })
 
 module.exports = pharmaRoute
