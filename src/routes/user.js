@@ -1,7 +1,8 @@
 const express = require('express'),
       client = require('../Controllers/db'),
       { getHashedPass, comparePass } = require('../Controllers/bcrypt'),
-      { getToken, verifyToken }  = require('../Controllers/auth')
+      { getToken, verifyToken }  = require('../Controllers/auth'),
+      { patientAccess } = require('../Controllers/permission'),
       userRoute = express.Router()
 
 userRoute.get('/', (req,res) => {
@@ -16,7 +17,7 @@ userRoute.get('/', (req,res) => {
         })
 })
 
-userRoute.get('/id', verifyToken ,(req,res) => {
+userRoute.get('/id', verifyToken, patientAccess, (req,res) => {
     res.status(200).send(`patient id : ${req.body.text}`)
 })
 

@@ -1,7 +1,8 @@
 const express = require('express'),
       client = require('../Controllers/db'),
       { getHashedPass, comparePass } = require('../Controllers/bcrypt'),
-      { getToken, verifyToken } = require('../Controllers/auth')
+      { getToken, verifyToken } = require('../Controllers/auth'),
+      { pharmaAccess } = require('../Controllers/permission'),
       pharmaRoute = express.Router()
 
 pharmaRoute.get('/', (req,res) => {client
@@ -15,7 +16,7 @@ pharmaRoute.get('/', (req,res) => {client
     })
 })
 
-pharmaRoute.get('/id', (req,res) => {
+pharmaRoute.get('/id', verifyToken, pharmaAccess, (req,res) => {
     res.status(200).send(`${req.body.userId}`)
 })
 

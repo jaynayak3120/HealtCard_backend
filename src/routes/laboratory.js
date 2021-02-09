@@ -1,7 +1,8 @@
 const express = require('express'),
       client = require('../Controllers/db'),
       { getHashedPass, comparePass } = require('../Controllers/bcrypt'),
-      { getToken, verifyToken } = require('../Controllers/auth')
+      { getToken, verifyToken } = require('../Controllers/auth'),
+      { labAccess } = require('../Controllers/permission'),
       labRoute = express.Router()
 
 labRoute.get('/', verifyToken, async (req,res) => {
@@ -13,7 +14,7 @@ labRoute.get('/', verifyToken, async (req,res) => {
     }
 })
 
-labRoute.get('/id', verifyToken, (req,res) => {
+labRoute.get('/id', verifyToken, labAccess, (req,res) => {
     res.status(200).send(`${req.body.labId}`)
 })
 
