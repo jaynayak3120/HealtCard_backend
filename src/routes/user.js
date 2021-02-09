@@ -1,6 +1,7 @@
 const express = require('express'),
       client = require('../Controllers/db'),
-      { getHashedPass, comparePass } = require('../Controllers/bcrypt')
+      { getHashedPass, comparePass } = require('../Controllers/bcrypt'),
+      { getToken, verifyToken }  = require('../Controllers/auth')
       userRoute = express.Router()
 
 userRoute.get('/', (req,res) => {
@@ -15,8 +16,8 @@ userRoute.get('/', (req,res) => {
         })
 })
 
-userRoute.get('/id', (req,res) => {
-    res.status(200).send(`${req.body.userId}`)
+userRoute.get('/id', verifyToken ,(req,res) => {
+    res.status(200).send(`patient id : ${req.body.text}`)
 })
 
 userRoute.post('/signin', async (req,res) => {
@@ -24,9 +25,10 @@ userRoute.post('/signin', async (req,res) => {
         const resp = await client.query(`select * from patient where "patientID"=${req.body.patientID}`)
 
         const result = await comparePass(req.body.patientPass,resp.rows[0].patientPass)
-        if(result) {
+        if( result ) {
+            const token = getToken({ _id: resp.rows[0].patientID, role: 'patient' })
             delete resp.rows[0].patientPass
-            res.status(200).json(resp.rows[0])
+            res.status(200).json({patient: resp.rows[0], token: token})
         } else {
             res.status(404).json({ message: 'Wrong password' })
         }
@@ -42,7 +44,7 @@ userRoute.post('/signup', async (req,res) => {
         
         const user = await client.query(text[1])
 
-        if(user.rowCount) {
+        if(user.rowCount !== 0) {
             res.status(400).json({ message: "User already exist" })
         } else {
             values[1] = await getHashedPass(req.body.patientPass)
