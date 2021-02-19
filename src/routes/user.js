@@ -7,11 +7,11 @@ const express = require('express'),
 
 userRoute.post('/signin', async (req,res) => {
     try {
-        const resp = await client.query('SELECT * FROM patient WHERE "patientID"=$1',[req.body.patientID])
+        const resp = await client.query('SELECT * FROM "Patient" WHERE "patientID"=$1',[req.body.patientID])
 
         const result = await comparePass(req.body.patientPass,resp.rows[0].patientPass)
         if( result ) {
-            const token = getToken({ _id: resp.rows[0].patientID, role: 'patient' })
+            const token = getToken({ _id: resp.rows[0].patientID, role: '"Patient"' })
             delete resp.rows[0].patientPass
             res.status(200).json({patient: resp.rows[0], token: token})
         } else {
@@ -24,15 +24,16 @@ userRoute.post('/signin', async (req,res) => {
 
 userRoute.post('/signup', async (req,res) => {
     try {
-        const text = ['INSERT INTO patient VALUES($1, $2, $3, $4, $5) RETURNING *',`SELECT * FROM patient WHERE "patientID"=${req.body.patientID}`],
-              values = [req.body.patientID, req.body.patientPass, req.body.patientName, req.body.age, req.body.bloodGrp]
+        const d = new Date(1997,04,11)
+        const text = ['INSERT INTO "Patient" VALUES($1, $2, $3, $4, $5) RETURNING *',`SELECT * FROM "Patient" WHERE "patientID"=${req.body.patientID}`],
+              values = [req.body.patientID, req.body.patientName,d.toDateString(), req.body.patientPass, req.body.bloodGrp]
         
         const user = await client.query(text[1])
 
         if(user.rowCount !== 0) {
             res.status(400).json({ message: "User already exist" })
         } else {
-            values[1] = await getHashedPass(req.body.patientPass)
+            values[3] = await getHashedPass(req.body.patientPass)
             const resp = await client.query(text[0], values)
             
             delete resp.rows[0].patientPass
@@ -45,7 +46,7 @@ userRoute.post('/signup', async (req,res) => {
 
 userRoute.get('/', (req,res) => {
     client
-        .query('SELECT * FROM patient')
+        .query('SELECT * FROM "Patient"')
         .then(resp => {
             res.status(200).json({users: resp.rows})
         })
@@ -60,7 +61,7 @@ userRoute.use(patientAccess)
 
 userRoute.get('/:id', async (req,res) => {
     try {
-        const resp = await client.query('SELECT * FROM patient WHERE "patientID"=$1',[req.user._id])
+        const resp = await client.query('SELECT * FROM "Patient" WHERE "patientID"=$1',[req.user._id])
         delete resp.rows[0].patientPass
         res.status(200).json({ patient: resp.rows[0] })
     } catch (e) {
@@ -71,7 +72,7 @@ userRoute.get('/:id', async (req,res) => {
 userRoute.get('/:patientID/cases', async (req, res) => {
     if(req.params.patientID === req.user._id){   
         try {
-            const resp = await client.query('SELECT cases.*, patient.* FROM cases INNER JOIN patient ON (cases."patientID" = patient."patientID")  where patient."patientID"=$1',[req.user._id])
+            const resp = await client.query('SELECT "Cases".*, "Patient".* FROM "Cases" INNER JOIN patient ON ("Cases"."patientID" = "Patient"."patientID")  where "Patient"."patientID"=$1',[req.user._id])
             res.status(200).json({ cases: resp.rows })
         } catch (e) {
             res.status(404).json({ message: 'Data not found', errors: e.stack })
