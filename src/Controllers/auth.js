@@ -11,7 +11,7 @@ function verifyToken( req, res, next) {
 
     jwt.verify(token, process.env.JWT_SECRET, async (err,user) => {
         if(err){
-            res.status(403).json({ message : 'You are not authorized', errors: err })
+            return res.status(403).json({ message : 'You are not authorized', errors: err })
         }
         req.user = user
         next()

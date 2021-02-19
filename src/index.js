@@ -3,11 +3,11 @@ const env = require('dotenv'),
 env.config()
 
 //----------Routes
-const UserRoutes = require('./src/routes/user'),
-      DoctorRoutes = require('./src/routes/doctor'),
-      LabRoutes = require('./src/routes/laboratory'),
-      PharmaRoute = require('./src/routes/pharma'),
-      CasesRoute = require('./src/routes/cases')
+const UserRoutes = require('./routes/user'),
+      DoctorRoutes = require('./routes/doctor'),
+      LabRoutes = require('./routes/laboratory'),
+      PharmaRoute = require('./routes/pharma'),
+      CasesRoute = require('./routes/cases')
 
 const express = require('express'),
     
