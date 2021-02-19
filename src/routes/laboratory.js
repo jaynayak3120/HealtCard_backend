@@ -80,13 +80,17 @@ labRoute.get('/:labID', async (req,res) => {
 labRoute.post('/addReport', upload.array('report'), (req, res) => {
     if(req.body.labID === req.user._id){
         try {
-            const { labID, patientID } = req.body
-            
+            const { labID, patientID, caseID } = req.body
+            var urls = []
+
             if(req.files.length > 0){
-                req.files.map(file => {
+                urls = req.files.map(file => {
                     console.log(file.filename);
+                    return 'D:/Project/backend/src/reports/'+file.filename
+                    //'https://drive.google.com/file/d/1V93QCn1JNt1xxLSXq-w1B7jE4DKwhfS5/view?usp=sharing'
                 });
             }
+            console.log(urls);
             res.status(201).json( req.body )
         } catch (e) {
             res.status(404).json({ message: 'Data not found', errors: e.stack , body: req.body})
