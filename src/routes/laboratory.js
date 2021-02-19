@@ -20,11 +20,11 @@ var upload = multer({ storage: storage })
 
 labRoute.post('/signin', async (req,res) => {
     try {
-        const resp = await client.query('SELECT * FROM laboratory WHERE "labID"=$1',[req.body.labID])
+        const resp = await client.query('SELECT * FROM "Laboratory" WHERE "labID"=$1',[req.body.labID])
 
         const result = await comparePass(req.body.labPass,resp.rows[0].labPass)
         if( result ) {
-            const token = getToken({ _id: resp.rows[0].labID, role: 'laboratory' })
+            const token = getToken({ _id: resp.rows[0].labID, role: 'Laboratory' })
             delete resp.rows[0].labPass
             res.status(200).json({ laboratory: resp.rows[0], token: token })
         } else {
@@ -37,14 +37,14 @@ labRoute.post('/signin', async (req,res) => {
 
 labRoute.post('/signup', async (req,res) => {
     try {
-        const text = ['INSERT INTO laboratory VALUES($1, $2, $3) RETURNING *','SELECT * FROM laboratory WHERE "labID"=$1'],
-                values = [req.body.labID, req.body.labPass, req.body.labName]
+        const text = ['INSERT INTO "Laboratory" VALUES($1, $2, $3) RETURNING *',`SELECT * FROM "Laboratory" WHERE "labID"=${req.body.labID}`],
+                values = [req.body.labID, req.body.labName, req.body.labPass]
 
         const user = await client.query(text[1])
         if(user.rowCount !== 0) {
             res.status(400).json({ message: "User already exist" })
         } else {
-            values[1] = await getHashedPass(req.body.labPass)
+            values[2] = await getHashedPass(req.body.labPass)
             const resp = await client.query(text[0], values)
             
             delete resp.rows[0].labPass
@@ -57,7 +57,7 @@ labRoute.post('/signup', async (req,res) => {
 
 labRoute.get('/', async (req,res) => {
     try {
-        const resp = await client.query("SELECT * FROM laboratory")
+        const resp = await client.query('SELECT * FROM "Laboratory"')
         res.status(200).json(resp.rows)
     } catch (e) {
         res.status(503).json({ message: "Connection Error" , errors: e.stack})
@@ -69,7 +69,7 @@ labRoute.use(labAccess)
 
 labRoute.get('/:labID', async (req,res) => {
     try{
-        const resp = await client.query('SELECT * FROM laboratory WHERE "labID"=$1',[req.user._id])
+        const resp = await client.query('SELECT * FROM "Laboratory" WHERE "labID"=$1',[req.user._id])
         delete resp.rows[0].labPass
         res.status(200).json({ laboratory: resp.rows[0] })
     } catch (e) {
