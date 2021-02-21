@@ -72,7 +72,7 @@ userRoute.get('/:id', async (req,res) => {
 userRoute.get('/:patientID/cases', async (req, res) => {
     if(req.params.patientID === req.user._id){   
         try {
-            const resp = await client.query('SELECT "Cases".*, "Patient".* FROM "Cases" INNER JOIN patient ON ("Cases"."patientID" = "Patient"."patientID")  where "Patient"."patientID"=$1',[req.user._id])
+            const resp = await client.query('SELECT "Cases".*, "Prescription"."prescDetail", "Prescription"."dateOfPrescription", "Reports"."reportURL", "Reports"."dateOfReport" FROM "Cases" INNER JOIN "Patient" ON ("Cases"."patientID" = "Patient"."patientID") LEFT JOIN "Reports" ON ("Cases"."reportID" = "Reports"."reportID") LEFT JOIN "Prescription" ON ("Cases"."prescriptionID" = "Prescription"."prescriptionID") where "Patient"."patientID"=$1',[req.user._id])
             res.status(200).json({ cases: resp.rows })
         } catch (e) {
             res.status(404).json({ message: 'Data not found', errors: e.stack })
