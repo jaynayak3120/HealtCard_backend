@@ -5,6 +5,7 @@ const express = require('express'),
       { getHashedPass, comparePass } = require('../Controllers/bcrypt'),
       { getToken, verifyToken } = require('../Controllers/auth'),
       { labAccess } = require('../Controllers/permission'),
+      fs = require('fs'),
       labRoute = express.Router()
 
 var storage = multer.diskStorage({
@@ -24,7 +25,7 @@ labRoute.post('/signin', async (req,res) => {
 
         const result = await comparePass(req.body.labPass,resp.rows[0].labPass)
         if( result ) {
-            const token = getToken({ _id: resp.rows[0].labID, role: 'Laboratory' })
+            const token = getToken({ _id: resp.rows[0].labID, role: '"Laboratory"' })
             delete resp.rows[0].labPass
             res.status(200).json({ laboratory: resp.rows[0], token: token })
         } else {
@@ -64,6 +65,19 @@ labRoute.get('/', async (req,res) => {
     }
 })
 
+//const pdf = require('../reports/Heart_Report.pdf')
+//console.log(pdf);
+labRoute.get('/downloadfile',(req, res) => {
+    const src = fs.createReadStream('D://Project//backend//src//reports//Heart_Report.pdf');
+  
+    res.writeHead(200, {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'attachment; filename=sample.pdf'
+    });
+  
+    src.pipe(res);
+});
+
 labRoute.use(verifyToken)
 labRoute.use(labAccess)
 
@@ -77,23 +91,26 @@ labRoute.get('/:labID', async (req,res) => {
     }
 })
 
-labRoute.post('/addReport', upload.array('report'), (req, res) => {
+labRoute.post('/addReport', upload.array('report'), async (req, res) => {
     if(req.body.labID === req.user._id){
         try {
-            const { labID, patientID, caseID } = req.body
+            const d = new Date(2015,02,21)
             var urls = []
 
             if(req.files.length > 0){
                 urls = req.files.map(file => {
                     console.log(file.filename);
-                    return 'D:/Project/backend/src/reports/'+file.filename
+                    return '"D://Project//backend//src//reports//"'+file.filename
                     //'https://drive.google.com/file/d/1V93QCn1JNt1xxLSXq-w1B7jE4DKwhfS5/view?usp=sharing'
                 });
             }
-            console.log(urls);
-            res.status(201).json( req.body )
+            const resp = await client.query('INSERT INTO "Reports"("dateOfReport","labID","patientID","caseID","reportURL") VALUES($1,$2,$3,$4,$5) RETURNING *',[d.toDateString(),req.body.labID,req.body.patientID,req.body.caseID,urls])
+
+            const resp1 = await client.query('UPDATE "Cases" SET "reportID"=$1 where "caseID"=$2',[resp.rows[0].reportID,req.body.caseID])
+
+            res.status(201).json({ report: resp.rows[0], case: resp1.rows[0] })
         } catch (e) {
-            res.status(404).json({ message: 'Data not found', errors: e.stack , body: req.body})
+            res.status(404).json({ message: 'Data not found', errors: e.stack , body: req.body })
         }
     } else {
         res.status(404).json({ message: 'You are not authorized' })

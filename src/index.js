@@ -1,5 +1,7 @@
 const env = require('dotenv'),
-    bodyParser = require('body-parser')
+    bodyParser = require('body-parser'),
+    cors = require('cors')
+
 env.config()
 
 //----------Routes
@@ -15,6 +17,11 @@ server = express()
 server.use(express.json())
 server.use(bodyParser.json())
 server.use(bodyParser.urlencoded({ extended: false}))
+const corsOptions = {
+    origin: 'http://localhost:4000',
+    optionsSuccessStatus: 200
+}
+server.use(cors(corsOptions))
 
 server.get('', (req,res) => {
     res.send('Hello from express!')

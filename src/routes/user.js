@@ -24,7 +24,7 @@ userRoute.post('/signin', async (req,res) => {
 
 userRoute.post('/signup', async (req,res) => {
     try {
-        const d = new Date(1997,04,11)
+        //const d = new Date(1997,04,11)
         const text = ['INSERT INTO "Patient" VALUES($1, $2, $3, $4, $5) RETURNING *',`SELECT * FROM "Patient" WHERE "patientID"=${req.body.patientID}`],
               values = [req.body.patientID, req.body.patientName,d.toDateString(), req.body.patientPass, req.body.bloodGrp]
         
