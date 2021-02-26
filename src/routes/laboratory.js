@@ -21,13 +21,13 @@ var upload = multer({ storage: storage })
 
 labRoute.post('/signin', async (req,res) => {
     try {
-        const resp = await client.query('SELECT * FROM "Laboratory" WHERE "labID"=$1',[req.body.labID])
+        const resp = await client.query('SELECT * FROM "Laboratory" WHERE "labID"=$1',[req.body.userID])
 
-        const result = await comparePass(req.body.labPass,resp.rows[0].labPass)
+        const result = await comparePass(req.body.userPass,resp.rows[0].labPass)
         if( result ) {
             const token = getToken({ _id: resp.rows[0].labID, role: '"Laboratory"' })
             delete resp.rows[0].labPass
-            res.status(200).json({ laboratory: resp.rows[0], token: token })
+            res.status(200).json({ user: resp.rows[0], token: token })
         } else {
             res.status(404).json({ message: 'Wrong password' })
         }

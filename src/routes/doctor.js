@@ -7,13 +7,13 @@ const express = require('express'),
 
 doctorRoute.post('/signin', async (req,res) => {
     try {
-        const resp = await client.query('SELECT * FROM "Doctor" WHERE "doctorID"=$1',[req.body.doctorID])
+        const resp = await client.query('SELECT * FROM "Doctor" WHERE "doctorID"=$1',[req.body.userID])
 
-        const result = await comparePass(req.body.docPass,resp.rows[0].docPass)
+        const result = await comparePass(req.body.userPass,resp.rows[0].docPass)
         if( result ) {
             const token = getToken({ _id: resp.rows[0].doctorID, role: '"Doctor"' })
             delete resp.rows[0].docPass
-            res.status(200).json({ doctor: resp.rows[0], token: token })
+            res.status(200).json({ user: resp.rows[0], token: token })
         } else {
             res.status(404).json({ message: 'Wrong password' })
         }
