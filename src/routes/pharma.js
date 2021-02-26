@@ -7,13 +7,13 @@ const express = require('express'),
       
 pharmaRoute.post('/signin', async (req,res) => {
     try {
-        const resp = await client.query('SELECT * FROM "Pharmacist" WHERE "pharmaID"=$1',[req.body.pharmaID])
+        const resp = await client.query('SELECT * FROM "Pharmacist" WHERE "pharmaID"=$1',[req.body.userID])
 
-        const result = await comparePass(req.body.pharmaPass,resp.rows[0].pharmaPass)
+        const result = await comparePass(req.body.userPass,resp.rows[0].pharmaPass)
         if( result ) {
             const token = getToken({ _id: resp.rows[0].pharmaID, role: '"Pharmacist"' })
             delete resp.rows[0].pharmaPass
-            res.status(200).json({ pharmacists: resp.rows[0], token: token})
+            res.status(200).json({ user: resp.rows[0], token: token})
         } else {
             res.status(404).json({ message: 'Wrong password' })
         }
