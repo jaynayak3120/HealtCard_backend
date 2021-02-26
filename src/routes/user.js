@@ -7,13 +7,13 @@ const express = require('express'),
 
 userRoute.post('/signin', async (req,res) => {
     try {
-        const resp = await client.query('SELECT * FROM "Patient" WHERE "patientID"=$1',[req.body.patientID])
+        const resp = await client.query('SELECT * FROM "Patient" WHERE "patientID"=$1',[req.body.userID])
 
-        const result = await comparePass(req.body.patientPass,resp.rows[0].patientPass)
+        const result = await comparePass(req.body.userPass,resp.rows[0].patientPass)
         if( result ) {
             const token = getToken({ _id: resp.rows[0].patientID, role: '"Patient"' })
             delete resp.rows[0].patientPass
-            res.status(200).json({patient: resp.rows[0], token: token})
+            res.status(200).json({ user: resp.rows[0], token: token})
         } else {
             res.status(404).json({ message: 'Wrong password' })
         }
@@ -24,7 +24,7 @@ userRoute.post('/signin', async (req,res) => {
 
 userRoute.post('/signup', async (req,res) => {
     try {
-        const d = new Date(1997,04,11)
+        //const d = new Date(1997,04,11)
         const text = ['INSERT INTO "Patient" VALUES($1, $2, $3, $4, $5) RETURNING *',`SELECT * FROM "Patient" WHERE "patientID"=${req.body.patientID}`],
               values = [req.body.patientID, req.body.patientName,d.toDateString(), req.body.patientPass, req.body.bloodGrp]
         
