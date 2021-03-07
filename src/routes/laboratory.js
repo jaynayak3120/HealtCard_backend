@@ -67,19 +67,27 @@ labRoute.get('/', async (req,res) => {
 
 //const pdf = require('../reports/Heart_Report.pdf')
 //console.log(pdf);
-labRoute.get('/downloadfile',(req, res) => {
-    const src = fs.createReadStream('D://Project//backend//src//reports//Heart_Report.pdf');
-  
-    res.writeHead(200, {
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': 'attachment; filename=sample.pdf'
-    });
-  
-    src.pipe(res);
+labRoute.get('/downloadfile/:reportID/:report', async (req, res) => {
+    try {
+        console.log(req.params.reportID);
+        const url = await client.query('SELECT "reportURL" FROM "Reports" where "reportID"=$1',[req.params.reportID])
+        console.log(url);
+        console.log(url.rows[0].reportURL[req.params.report]);
+        const src = fs.createReadStream(`${url.rows[0].reportURL[req.params.report]}`);
+      
+        res.writeHead(200, {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': 'attachment; filename=sample.pdf'
+        });
+      
+        src.pipe(res);
+    } catch(e) {
+        console.log(e);
+    }
 });
 
 labRoute.use(verifyToken)
-labRoute.use(labAccess)
+//labRoute.use(labAccess)
 
 labRoute.get('/:labID', async (req,res) => {
     try{
@@ -94,14 +102,13 @@ labRoute.get('/:labID', async (req,res) => {
 labRoute.post('/addReport', upload.array('report'), async (req, res) => {
     if(req.body.labID === req.user._id){
         try {
-            const d = new Date(2015,02,21)
+            const d = new Date(2015,2,21)
             var urls = []
 
             if(req.files.length > 0){
                 urls = req.files.map(file => {
                     console.log(file.filename);
-                    return '"D://Project//backend//src//reports//"'+file.filename
-                    //'https://drive.google.com/file/d/1V93QCn1JNt1xxLSXq-w1B7jE4DKwhfS5/view?usp=sharing'
+                    return '"D://NodeJS//healthcard-backend//src//reports//"'+file.filename
                 });
             }
             const resp = await client.query('INSERT INTO "Reports"("dateOfReport","labID","patientID","caseID","reportURL") VALUES($1,$2,$3,$4,$5) RETURNING *',[d.toDateString(),req.body.labID,req.body.patientID,req.body.caseID,urls])

@@ -1,14 +1,14 @@
 const env = require('dotenv'),
     bodyParser = require('body-parser'),
-    cors = require('cors'),
+    cors = require('cors')
 env.config()
 
 //----------Routes
 const UserRoutes = require('./routes/user'),
-      DoctorRoutes = require('./routes/doctor'),
-      LabRoutes = require('./routes/laboratory'),
-      PharmaRoute = require('./routes/pharma'),
-      CasesRoute = require('./routes/cases')
+    DoctorRoutes = require('./routes/doctor'),
+    LabRoutes = require('./routes/laboratory'),
+    PharmaRoute = require('./routes/pharma'),
+    CasesRoute = require('./routes/cases')
 
 const express = require('express'),
 
@@ -16,12 +16,6 @@ server = express()
 server.use(express.json())
 server.use(bodyParser.json())
 server.use(bodyParser.urlencoded({ extended: false}))
-const corsOptions = {
-    origin: 'http://localhost:4000',
-    optionsSuccessStatus: 200
-}
-server.use(cors(corsOptions))
-
 const options = {
     origin: 'http://localhost:3000',
     optionsSuccessStatus: 200 

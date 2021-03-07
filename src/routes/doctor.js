@@ -83,7 +83,7 @@ doctorRoute.get('/:doctorID/cases', async (req, res) => {
 doctorRoute.get('/:doctorID/:patientID/cases', async (req, res) => {
     if(req.params.doctorID === req.user._id){   
         try {
-            const resp = await client.query('SELECT "Cases".*, "Prescription"."prescDetail", "Prescription"."dateOfPrescription", "Reports"."reportURL", "Reports"."dateOfReport" FROM "Cases" INNER JOIN "Patient" ON ("Cases"."patientID" = "Patient"."patientID") LEFT JOIN "Reports" ON ("Cases"."reportID" = "Reports"."reportID") LEFT JOIN "Prescription" ON ("Cases"."prescriptionID" = "Prescription"."prescriptionID") where "Patient"."patientID"=$1',[req.params.patientID])
+            const resp = await client.query('SELECT "Cases".*, "Prescription"."prescDetail", "Prescription"."dateOfPrescription", "Reports"."reportURL", "Reports"."dateOfReport", "Doctor"."docName" FROM "Cases" INNER JOIN "Patient" ON ("Cases"."patientID" = "Patient"."patientID") LEFT JOIN "Reports" ON ("Cases"."reportID" = "Reports"."reportID") LEFT JOIN "Prescription" ON ("Cases"."prescriptionID" = "Prescription"."prescriptionID") LEFT JOIN "Doctor" ON ("Cases"."docID" = "Doctor"."doctorID") where "Patient"."patientID"=$1',[req.params.patientID])
             res.status(200).json({ cases: resp.rows })
         } catch (e) {
             res.status(404).json({ message: 'Data not found', errors: e.stack })
@@ -96,11 +96,10 @@ doctorRoute.get('/:doctorID/:patientID/cases', async (req, res) => {
 doctorRoute.post('/:doctorID/:patientID/addCase', async (req, res) => {
     if(req.params.doctorID === req.user._id){   
         try {
-            const d = new Date(2015,02,21)
             if(req.body.caseDetail && req.body.prescDetail){
-                const resp = await client.query('INSERT INTO "Cases"("caseDetail","dateOfEntry","patientID","docID") VALUES($1,$2,$3,$4) RETURNING *',[req.body.caseDetail,d.toDateString(),req.body.patientID,req.user._id])
+                const resp = await client.query('INSERT INTO "Cases"("caseDetail","dateOfEntry","patientID","docID") VALUES($1,$2,$3,$4) RETURNING *',[req.body.caseDetail,new Date(),req.body.userID,req.user._id])
                 
-                const resp1 = await client.query('INSERT INTO "Prescription"("dateOfPrescription","prescDetail","docID","patientID","caseID") VALUES($1,$2,$3,$4,$5) RETURNING *',[d.toDateString(), req.body.prescDetail,req.user._id, req.body.patientID, resp.rows[0].caseID])
+                const resp1 = await client.query('INSERT INTO "Prescription"("dateOfPrescription","prescDetail","docID","patientID","caseID") VALUES($1,$2,$3,$4,$5) RETURNING *',[new Date(), req.body.prescDetail,req.user._id, req.params.patientID, resp.rows[0].caseID])
                 
                 const resp2 = await client.query('UPDATE "Cases" SET "prescriptionID"=$1 WHERE "caseID"=$2 RETURNING *',[resp1.rows[0].prescriptionID,resp.rows[0].caseID])
                 res.status(201).json( { case: resp2.rows[0], prescription: resp1.rows[0]} )
@@ -109,7 +108,7 @@ doctorRoute.post('/:doctorID/:patientID/addCase', async (req, res) => {
                 console.log(resp);
                 res.status(201).json( resp.rows[0] )
             } else {
-                const resp = await client.query('INSERT INTO "Prescription"("dateOfPrescription","prescDetail","docID","patientID") VALUES($1,$2,$3,$4) RETURNING *',[d.toDateString(),req.body.prescDetail,req.user._id,req.body.patientID])
+                const resp = await client.query('INSERT INTO "Prescription"("dateOfPrescription","prescDetail","docID","patientID") VALUES($1,$2,$3,$4) RETURNING *',[new Date(),req.body.prescDetail,req.user._id,req.body.patientID])
                 res.status(201).json( resp.rows[0] )
             }
         } catch (e) {
